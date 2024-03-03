@@ -18,7 +18,14 @@
 //! - [`CreateRecord`]
 //! - [`DeleteRecord`]
 
-use std::net::{Ipv4Addr, Ipv6Addr};
+use std::{
+    fmt::Debug,
+    net::{Ipv4Addr, Ipv6Addr},
+    str::FromStr,
+};
+
+#[cfg(feature = "hetzner")]
+pub mod hetzner;
 
 /// Represents a DNS zone provider.
 ///
@@ -33,24 +40,25 @@ pub trait Provider {
 
     /// The provider-specific custom zone retrieval error type used for [`RetrieveZoneError::Custom`].
     /// <br/>If no custom errors should be provided, use `()`.
-    type CustomRetrieveError;
+    type CustomRetrieveError: Debug;
 
     /// Retrieves all available zones.
     /// <br/>When no record exists, an [`Ok`] value with an empty [`Vec`] will be returned, not [`RetrieveZoneError::NotFound`].
-    fn list_zones(&self) -> Result<Vec<&Self::Zone>, RetrieveZoneError<Self::CustomRetrieveError>>;
+    fn list_zones(&self) -> Result<Vec<Self::Zone>, RetrieveZoneError<Self::CustomRetrieveError>>;
 
     /// Retrieves a zone by its provider-specific ID.
     /// <br/>Refer to the provider's documentation to figure out which value is used as the ID.
     fn get_zone(
         &self,
         zone_id: &str,
-    ) -> Result<&Self::Zone, RetrieveZoneError<Self::CustomRetrieveError>>;
+    ) -> Result<Self::Zone, RetrieveZoneError<Self::CustomRetrieveError>>;
 }
 
 /// Represents an error that occured when retrieving DNS zones using [`Provider::list_zones`] or [`Provider::get_zone`].
 ///
 /// Providers can provide a custom error type ([`Provider::CustomRetrieveError`]) and return it using [`RetrieveZoneError::Custom`] to extend the pool of well-defined errors.
 /// <br/>Refer to the provider's documentation for more information.
+#[derive(Debug, PartialEq)]
 pub enum RetrieveZoneError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
     Unauthorized,
@@ -66,7 +74,7 @@ pub enum RetrieveZoneError<T> {
 pub trait CreateZone: Provider {
     /// The provider-specific custom zone creation error type used for [`CreateZoneError::Custom`].
     /// <br/>If no custom errors should be provided, use `()`.
-    type CustomCreateError;
+    type CustomCreateError: Debug;
 
     /// Creates a new DNS zone with the given domain.
     fn create_zone(
@@ -79,6 +87,7 @@ pub trait CreateZone: Provider {
 ///
 /// Providers can provide a custom error type ([`CreateZone::CustomCreateError`]) and return it using [`CreateZoneError::Custom`] to extend the pool of well-defined errors.
 /// <br/>Refer to the provider's documentation for more information.
+#[derive(Debug, PartialEq)]
 pub enum CreateZoneError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
     Unauthorized,
@@ -91,7 +100,7 @@ pub enum CreateZoneError<T> {
 pub trait DeleteZone: Provider {
     /// The provider-specific custom zone deletion error type used for [`DeleteZoneError::Custom`].
     /// <br/>If no custom errors should be provided, use `()`.
-    type CustomDeleteError;
+    type CustomDeleteError: Debug;
 
     /// Deletes a zone by its provider-specific ID.
     /// <br/>Refer to the provider's documentation to figure out which value is used as the ID.
@@ -102,6 +111,7 @@ pub trait DeleteZone: Provider {
 ///
 /// Providers can provide a custom error type ([`DeleteZone::CustomDeleteError`]) and return it using [`DeleteZoneError::Custom`] to extend the pool of well-defined errors.
 /// <br/>Refer to the provider's documentation for more information.
+#[derive(Debug, PartialEq)]
 pub enum DeleteZoneError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
     Unauthorized,
@@ -114,30 +124,95 @@ pub enum DeleteZoneError<T> {
 }
 
 /// Represents a DNS record value.
-pub enum RecordData<'a> {
+#[derive(Debug)]
+pub enum RecordData {
     A(Ipv4Addr),
     AAAA(Ipv6Addr),
-    CNAME(&'a str),
+    CNAME(String),
     MX {
         priority: u16,
-        mail_server: &'a str,
+        mail_server: String,
     },
-    NS(&'a str),
+    NS(String),
     SRV {
         priority: u16,
         weight: u16,
         port: u16,
-        target: &'a str,
+        target: String,
     },
-    TXT(&'a str),
+    TXT(String),
+    Other {
+        typ: String,
+        value: String,
+    },
+}
+
+impl RecordData {
+    /// Tries to parse raw DNS record data to their corresponsing [`RecordData`] value.
+    ///
+    /// This function falls back to [`RecordData::Other`] if the value could not be parsed or the type is not supported.
+    pub fn from_raw(typ: &str, value: &str) -> RecordData {
+        let data = match typ {
+            "A" => Ipv4Addr::from_str(value)
+                .ok()
+                .map(|addr| RecordData::A(addr)),
+            "AAAA" => Ipv6Addr::from_str(value)
+                .ok()
+                .map(|addr| RecordData::AAAA(addr)),
+            "CNAME" => Some(RecordData::CNAME(value.to_owned())),
+            "MX" => {
+                let mut iter = value.split_whitespace();
+
+                let priority = iter.next().and_then(|raw| raw.parse::<u16>().ok());
+                let server = iter.next();
+
+                if priority.is_none() || server.is_none() {
+                    None
+                } else {
+                    Some(RecordData::MX {
+                        priority: priority.unwrap(),
+                        mail_server: server.unwrap().to_owned(),
+                    })
+                }
+            }
+            "NS" => Some(RecordData::NS(value.to_owned())),
+            "SRV" => {
+                let mut iter = value.split_whitespace();
+
+                let priority = iter.next().and_then(|raw| raw.parse::<u16>().ok());
+                let weight = iter.next().and_then(|raw| raw.parse::<u16>().ok());
+                let port = iter.next().and_then(|raw| raw.parse::<u16>().ok());
+                let target = iter.next();
+
+                if priority.is_none() || weight.is_none() || port.is_none() || target.is_none() {
+                    None
+                } else {
+                    Some(RecordData::SRV {
+                        priority: priority.unwrap(),
+                        weight: weight.unwrap(),
+                        port: port.unwrap(),
+                        target: target.unwrap().to_owned(),
+                    })
+                }
+            }
+            "TXT" => Some(RecordData::TXT(value.to_owned())),
+            _ => None,
+        };
+
+        data.unwrap_or(RecordData::Other {
+            typ: typ.to_owned(),
+            value: value.to_owned(),
+        })
+    }
 }
 
 /// Represents a DNS record.
-pub struct Record<'a> {
-    pub id: &'a str,
-    pub host: &'a str,
-    pub data: &'a RecordData<'a>,
-    pub ttl: u32,
+#[derive(Debug)]
+pub struct Record {
+    pub id: String,
+    pub host: String,
+    pub data: RecordData,
+    pub ttl: u64,
 }
 
 /// Represents a DNS zone.
@@ -150,7 +225,7 @@ pub struct Record<'a> {
 pub trait Zone {
     /// The provider-specific custom record retrieval error type used for [`RetrieveRecordError::Custom`].
     /// <br/>If no custom errors should be provided, use `()`.
-    type CustomRetrieveError;
+    type CustomRetrieveError: Debug;
 
     /// Returns the provider-specific ID of the zone.
     fn id(&self) -> &str;
@@ -174,6 +249,7 @@ pub trait Zone {
 ///
 /// Providers can provide a custom error type ([`Zone::CustomRetrieveError`]) and return it using [`RetrieveRecordError::Custom`] to extend the pool of well-defined errors.
 /// <br/>Refer to the provider's documentation for more information.
+#[derive(Debug, PartialEq)]
 pub enum RetrieveRecordError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
     Unauthorized,
@@ -189,14 +265,14 @@ pub enum RetrieveRecordError<T> {
 pub trait CreateRecord: Zone {
     /// The provider-specific custom record creation error type used for [`CreateRecordError::Custom`].
     /// <br/>If no custom errors should be provided, use `()`.
-    type CustomCreateError;
+    type CustomCreateError: Debug;
 
     /// Creates a new record.
     fn create_record(
         &self,
         host: &str,
         data: &RecordData,
-        ttl: u32,
+        ttl: u64,
     ) -> Result<Record, CreateRecordError<Self::CustomCreateError>>;
 }
 
@@ -204,6 +280,7 @@ pub trait CreateRecord: Zone {
 ///
 /// Providers can provide a custom error type ([`CreateRecord::CustomCreateError`]) and return it using [`CreateRecordError::Custom`] to extend the pool of well-defined errors.
 /// <br/>Refer to the provider's documentation for more information.
+#[derive(Debug, PartialEq)]
 pub enum CreateRecordError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
     Unauthorized,
@@ -219,7 +296,7 @@ pub enum CreateRecordError<T> {
 pub trait DeleteRecord: Zone {
     /// The provider-specific custom record creation error type used for [`DeleteRecordError::Custom`].
     /// <br/>If no custom errors should be provided, use `()`.
-    type CustomDeleteError;
+    type CustomDeleteError: Debug;
 
     /// Deletes a record by its ID.
     fn delete_record(
@@ -232,6 +309,7 @@ pub trait DeleteRecord: Zone {
 ///
 /// Providers can provide a custom error type ([`DeleteRecord::CustomDeleteError`]) and return it using [`DeleteRecordError::Custom`] to extend the pool of well-defined errors.
 /// <br/>Refer to the provider's documentation for more information.
+#[derive(Debug, PartialEq)]
 pub enum DeleteRecordError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
     Unauthorized,

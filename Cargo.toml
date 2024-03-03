@@ -4,3 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+reqwest = { version = "0.11", optional = true, default-features = false }
+serde = { version = "1.0.197", optional = true, features = ["derive"] }
+
+[features]
+default = ["reqwest?/default-tls"]
+hetzner = ["reqwest/blocking", "reqwest/json", "dep:serde"]
+rustls = ["reqwest?/rustls"]
