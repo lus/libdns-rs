@@ -80,7 +80,7 @@ pub trait CreateZone: Provider {
     fn create_zone(
         &self,
         domain: &str,
-    ) -> Result<&Self::Zone, CreateZoneError<Self::CustomCreateError>>;
+    ) -> Result<Self::Zone, CreateZoneError<Self::CustomCreateError>>;
 }
 
 /// Represents an error that occured when creating DNS zones using [`CreateZone::create_zone`].
@@ -91,6 +91,9 @@ pub trait CreateZone: Provider {
 pub enum CreateZoneError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
     Unauthorized,
+
+    /// Indicates that the specified domain name was not accepted.
+    InvalidDomainName,
 
     /// Provides a custom, provider-specific error of type `T`.
     Custom(T),
@@ -204,6 +207,40 @@ impl RecordData {
             value: value.to_owned(),
         })
     }
+
+    pub fn get_type(&self) -> &str {
+        match self {
+            RecordData::A(_) => "A",
+            RecordData::AAAA(_) => "A",
+            RecordData::CNAME(_) => "CNAME",
+            RecordData::MX { .. } => "MX",
+            RecordData::NS(_) => "NS",
+            RecordData::SRV { .. } => "SRV",
+            RecordData::TXT(_) => "TXT",
+            RecordData::Other { typ, .. } => typ.as_str(),
+        }
+    }
+
+    pub fn get_value(&self) -> String {
+        match self {
+            RecordData::A(addr) => addr.to_string(),
+            RecordData::AAAA(addr) => addr.to_string(),
+            RecordData::CNAME(alias) => alias.clone(),
+            RecordData::MX {
+                priority,
+                mail_server,
+            } => format!("{} {}", priority, mail_server),
+            RecordData::NS(ns) => ns.clone(),
+            RecordData::SRV {
+                priority,
+                weight,
+                port,
+                target,
+            } => format!("{} {} {} {}", priority, weight, port, target),
+            RecordData::TXT(val) => val.clone(),
+            RecordData::Other { value, .. } => value.clone(),
+        }
+    }
 }
 
 /// Represents a DNS record.
@@ -287,6 +324,9 @@ pub enum CreateRecordError<T> {
 
     /// Indicates that the DNS provider does not support the specified record type.
     UnsupportedType,
+
+    /// Indicates that the record value is invalid.
+    InvalidRecord,
 
     /// Provides a custom, provider-specific error of type `T`.
     Custom(T),

@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{borrow::Cow, collections::HashMap, error::Error};
 
 use reqwest::{
     blocking::Client as HttpClient,
@@ -6,7 +6,7 @@ use reqwest::{
 };
 use serde::Deserialize;
 
-const HETZNER_API_URL: &str = "https://dns.hetzner.com/api/v1/";
+const HETZNER_API_URL: &str = "https://dns.hetzner.com/api/v1";
 
 pub struct Client {
     http_client: HttpClient,
@@ -44,6 +44,24 @@ impl Client {
             .json()
     }
 
+    pub fn create_zone(&self, domain: &str) -> Result<ZoneResponse, reqwest::Error> {
+        let mut request_body = HashMap::new();
+        request_body.insert("name", domain);
+
+        self.http_client
+            .post(format!("{}/zones", HETZNER_API_URL))
+            .json(&request_body)
+            .send()?
+            .json()
+    }
+
+    pub fn delete_zone(&self, zone_id: &str) -> Result<(), reqwest::Error> {
+        self.http_client
+            .delete(format!("{}/zones/{}", HETZNER_API_URL, zone_id))
+            .send()
+            .map(|_| ())
+    }
+
     pub fn retrieve_records(
         &self,
         zone_id: &str,
@@ -64,6 +82,38 @@ impl Client {
             .get(format!("{}/records/{}", HETZNER_API_URL, record_id))
             .send()?
             .json()
+    }
+
+    pub fn create_record(
+        &self,
+        zone_id: &str,
+        host: &str,
+        typ: &str,
+        value: &str,
+        ttl: Option<u64>,
+    ) -> Result<RecordResponse, reqwest::Error> {
+        let mut request_body = HashMap::new();
+        request_body.insert("zone_id", Cow::Borrowed(zone_id));
+        request_body.insert("name", Cow::Borrowed(host));
+        request_body.insert("type", Cow::Borrowed(typ));
+        request_body.insert("value", Cow::Borrowed(value));
+        let ttl_str_opt = ttl.map(|r| r.to_string());
+        if let Some(ttl_str) = ttl_str_opt {
+            request_body.insert("ttl", Cow::Owned(ttl_str.to_string()));
+        }
+
+        self.http_client
+            .post(format!("{}/records", HETZNER_API_URL))
+            .json(&request_body)
+            .send()?
+            .json()
+    }
+
+    pub fn delete_record(&self, record_id: &str) -> Result<(), reqwest::Error> {
+        self.http_client
+            .delete(format!("{}/records/{}", HETZNER_API_URL, record_id))
+            .send()
+            .map(|_| ())
     }
 }
 
