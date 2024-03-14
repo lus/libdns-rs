@@ -18,6 +18,9 @@
 //! - [`CreateRecord`]
 //! - [`DeleteRecord`]
 
+#![deny(rustdoc::broken_intra_doc_links)]
+#![forbid(unsafe_code)]
+
 use std::{
     fmt::Debug,
     net::{Ipv4Addr, Ipv6Addr},
