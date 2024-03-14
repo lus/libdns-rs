@@ -92,13 +92,14 @@ impl Client {
         value: &str,
         ttl: Option<u64>,
     ) -> Result<RecordResponse, reqwest::Error> {
-        let mut request_body = HashMap::new();
-        request_body.insert("zone_id", Cow::Borrowed(zone_id));
-        request_body.insert("name", Cow::Borrowed(host));
-        request_body.insert("type", Cow::Borrowed(typ));
-        request_body.insert("value", Cow::Borrowed(value));
-        let ttl_str_opt = ttl.map(|r| r.to_string());
-        if let Some(ttl_str) = ttl_str_opt {
+        let mut request_body = HashMap::from([
+            ("zone_id", Cow::Borrowed(zone_id)),
+            ("name", Cow::Borrowed(host)),
+            ("type", Cow::Borrowed(typ)),
+            ("value", Cow::Borrowed(value)),
+        ]);
+
+        if let Some(ttl_str) = ttl.map(|r| r.to_string()) {
             request_body.insert("ttl", Cow::Owned(ttl_str.to_string()));
         }
 
