@@ -4,16 +4,16 @@
 //!
 //! # Providers
 //!
-//! The most basic trait for every DNS zone provider is [`Provider`]. It only support zone retrieval by default.
-//! <br/>The following capabilities can be implemented additionally:
+//! The most basic trait for every DNS zone provider is [`Provider`]. It only support zone retrieval by default.  
+//! The following capabilities can be implemented additionally:
 //!
 //! - [`CreateZone`]
 //! - [`DeleteZone`]
 //!
 //! # Zones
 //!
-//! The generic DNS [`Zone`] also only supports record retrieval by default.
-//! <br/>The following capabilities can be implemented additionally:
+//! The generic DNS [`Zone`] also only supports record retrieval by default.  
+//! The following capabilities can be implemented additionally:
 //!
 //! - [`CreateRecord`]
 //! - [`DeleteRecord`]
@@ -41,16 +41,16 @@ pub trait Provider {
     /// The provider-specific zone type.
     type Zone: Zone;
 
-    /// The provider-specific custom zone retrieval error type used for [`RetrieveZoneError::Custom`].
-    /// <br/>If no custom errors should be provided, use `()`.
+    /// The provider-specific custom zone retrieval error type used for [`RetrieveZoneError::Custom`].  
+    /// If no custom errors should be provided, use `()`.
     type CustomRetrieveError: Debug;
 
-    /// Retrieves all available zones.
-    /// <br/>When no record exists, an [`Ok`] value with an empty [`Vec`] will be returned, not [`RetrieveZoneError::NotFound`].
+    /// Retrieves all available zones.  
+    /// When no record exists, an [`Ok`] value with an empty [`Vec`] will be returned, not [`RetrieveZoneError::NotFound`].
     fn list_zones(&self) -> Result<Vec<Self::Zone>, RetrieveZoneError<Self::CustomRetrieveError>>;
 
-    /// Retrieves a zone by its provider-specific ID.
-    /// <br/>Refer to the provider's documentation to figure out which value is used as the ID.
+    /// Retrieves a zone by its provider-specific ID.  
+    /// Refer to the provider's documentation to figure out which value is used as the ID.
     fn get_zone(
         &self,
         zone_id: &str,
@@ -59,8 +59,8 @@ pub trait Provider {
 
 /// Represents an error that occured when retrieving DNS zones using [`Provider::list_zones`] or [`Provider::get_zone`].
 ///
-/// Providers can provide a custom error type ([`Provider::CustomRetrieveError`]) and return it using [`RetrieveZoneError::Custom`] to extend the pool of well-defined errors.
-/// <br/>Refer to the provider's documentation for more information.
+/// Providers can provide a custom error type ([`Provider::CustomRetrieveError`]) and return it using [`RetrieveZoneError::Custom`] to extend the pool of well-defined errors.  
+/// Refer to the provider's documentation for more information.
 #[derive(Debug, PartialEq)]
 pub enum RetrieveZoneError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
@@ -75,8 +75,8 @@ pub enum RetrieveZoneError<T> {
 
 /// Represents a [`Provider`] that supports zone creation.
 pub trait CreateZone: Provider {
-    /// The provider-specific custom zone creation error type used for [`CreateZoneError::Custom`].
-    /// <br/>If no custom errors should be provided, use `()`.
+    /// The provider-specific custom zone creation error type used for [`CreateZoneError::Custom`].  
+    /// If no custom errors should be provided, use `()`.
     type CustomCreateError: Debug;
 
     /// Creates a new DNS zone with the given domain.
@@ -88,8 +88,8 @@ pub trait CreateZone: Provider {
 
 /// Represents an error that occured when creating DNS zones using [`CreateZone::create_zone`].
 ///
-/// Providers can provide a custom error type ([`CreateZone::CustomCreateError`]) and return it using [`CreateZoneError::Custom`] to extend the pool of well-defined errors.
-/// <br/>Refer to the provider's documentation for more information.
+/// Providers can provide a custom error type ([`CreateZone::CustomCreateError`]) and return it using [`CreateZoneError::Custom`] to extend the pool of well-defined errors.  
+/// Refer to the provider's documentation for more information.
 #[derive(Debug, PartialEq)]
 pub enum CreateZoneError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
@@ -104,19 +104,19 @@ pub enum CreateZoneError<T> {
 
 /// Represents a [`Provider`] that supports zone deletion.
 pub trait DeleteZone: Provider {
-    /// The provider-specific custom zone deletion error type used for [`DeleteZoneError::Custom`].
-    /// <br/>If no custom errors should be provided, use `()`.
+    /// The provider-specific custom zone deletion error type used for [`DeleteZoneError::Custom`].  
+    /// If no custom errors should be provided, use `()`.
     type CustomDeleteError: Debug;
 
-    /// Deletes a zone by its provider-specific ID.
-    /// <br/>Refer to the provider's documentation to figure out which value is used as the ID.
+    /// Deletes a zone by its provider-specific ID.  
+    /// Refer to the provider's documentation to figure out which value is used as the ID.
     fn delete_zone(&self, zone_id: &str) -> Result<(), DeleteZoneError<Self::CustomDeleteError>>;
 }
 
 /// Represents an error that occured when deleting DNS zones using [`DeleteZone::delete_zone`].
 ///
-/// Providers can provide a custom error type ([`DeleteZone::CustomDeleteError`]) and return it using [`DeleteZoneError::Custom`] to extend the pool of well-defined errors.
-/// <br/>Refer to the provider's documentation for more information.
+/// Providers can provide a custom error type ([`DeleteZone::CustomDeleteError`]) and return it using [`DeleteZoneError::Custom`] to extend the pool of well-defined errors.  
+/// Refer to the provider's documentation for more information.
 #[derive(Debug, PartialEq)]
 pub enum DeleteZoneError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
@@ -263,8 +263,8 @@ pub struct Record {
 /// - [`CreateRecord`]
 /// - [`CreateRecord`]
 pub trait Zone {
-    /// The provider-specific custom record retrieval error type used for [`RetrieveRecordError::Custom`].
-    /// <br/>If no custom errors should be provided, use `()`.
+    /// The provider-specific custom record retrieval error type used for [`RetrieveRecordError::Custom`].  
+    /// If no custom errors should be provided, use `()`.
     type CustomRetrieveError: Debug;
 
     /// Returns the provider-specific ID of the zone.
@@ -273,12 +273,12 @@ pub trait Zone {
     /// Returns the domain the zone manages.
     fn domain(&self) -> &str;
 
-    /// Retrieves all available records.
-    /// <br/>When no record exists, an [`Ok`] value with an empty [`Vec`] will be returned, not [`RetrieveRecordError::NotFound`].
+    /// Retrieves all available records.  
+    /// When no record exists, an [`Ok`] value with an empty [`Vec`] will be returned, not [`RetrieveRecordError::NotFound`].
     fn list_records(&self) -> Result<Vec<Record>, RetrieveRecordError<Self::CustomRetrieveError>>;
 
-    /// Retrieves a record by its provider-specific ID.
-    /// <br/>Refer to the provider's documentation to figure out which value is used as the ID.
+    /// Retrieves a record by its provider-specific ID.  
+    /// Refer to the provider's documentation to figure out which value is used as the ID.
     fn get_record(
         &self,
         record_id: &str,
@@ -287,8 +287,8 @@ pub trait Zone {
 
 /// Represents an error that occured when retrieving DNS records using [`Zone::list_records`] or [`Zone::get_record`].
 ///
-/// Providers can provide a custom error type ([`Zone::CustomRetrieveError`]) and return it using [`RetrieveRecordError::Custom`] to extend the pool of well-defined errors.
-/// <br/>Refer to the provider's documentation for more information.
+/// Providers can provide a custom error type ([`Zone::CustomRetrieveError`]) and return it using [`RetrieveRecordError::Custom`] to extend the pool of well-defined errors.  
+/// Refer to the provider's documentation for more information.
 #[derive(Debug, PartialEq)]
 pub enum RetrieveRecordError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
@@ -303,8 +303,8 @@ pub enum RetrieveRecordError<T> {
 
 /// Represents a [`Zone`] that supports record creation.
 pub trait CreateRecord: Zone {
-    /// The provider-specific custom record creation error type used for [`CreateRecordError::Custom`].
-    /// <br/>If no custom errors should be provided, use `()`.
+    /// The provider-specific custom record creation error type used for [`CreateRecordError::Custom`].  
+    /// If no custom errors should be provided, use `()`.
     type CustomCreateError: Debug;
 
     /// Creates a new record.
@@ -318,8 +318,8 @@ pub trait CreateRecord: Zone {
 
 /// Represents an error that occured when creating DNS records using [`CreateRecord::create_record`].
 ///
-/// Providers can provide a custom error type ([`CreateRecord::CustomCreateError`]) and return it using [`CreateRecordError::Custom`] to extend the pool of well-defined errors.
-/// <br/>Refer to the provider's documentation for more information.
+/// Providers can provide a custom error type ([`CreateRecord::CustomCreateError`]) and return it using [`CreateRecordError::Custom`] to extend the pool of well-defined errors.  
+/// Refer to the provider's documentation for more information.
 #[derive(Debug, PartialEq)]
 pub enum CreateRecordError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
@@ -337,8 +337,8 @@ pub enum CreateRecordError<T> {
 
 /// Represents a [`Zone`] that supports record deletion.
 pub trait DeleteRecord: Zone {
-    /// The provider-specific custom record creation error type used for [`DeleteRecordError::Custom`].
-    /// <br/>If no custom errors should be provided, use `()`.
+    /// The provider-specific custom record creation error type used for [`DeleteRecordError::Custom`].  
+    /// If no custom errors should be provided, use `()`.
     type CustomDeleteError: Debug;
 
     /// Deletes a record by its ID.
@@ -350,8 +350,8 @@ pub trait DeleteRecord: Zone {
 
 /// Represents an error that occured when deleting DNS records using [`DeleteRecord::delete_record`].
 ///
-/// Providers can provide a custom error type ([`DeleteRecord::CustomDeleteError`]) and return it using [`DeleteRecordError::Custom`] to extend the pool of well-defined errors.
-/// <br/>Refer to the provider's documentation for more information.
+/// Providers can provide a custom error type ([`DeleteRecord::CustomDeleteError`]) and return it using [`DeleteRecordError::Custom`] to extend the pool of well-defined errors.  
+/// Refer to the provider's documentation for more information.
 #[derive(Debug, PartialEq)]
 pub enum DeleteRecordError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
