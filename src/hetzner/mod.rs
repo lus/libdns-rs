@@ -28,7 +28,7 @@ impl HetznerProvider {
 
 impl Provider for HetznerProvider {
     type Zone = HetznerZone;
-    type CustomRetrieveError = ();
+    type CustomRetrieveError = reqwest::Error;
 
     fn get_zone(
         &self,
@@ -39,10 +39,10 @@ impl Provider for HetznerProvider {
                 return match err.status().unwrap() {
                     reqwest::StatusCode::NOT_FOUND => RetrieveZoneError::NotFound,
                     reqwest::StatusCode::UNAUTHORIZED => RetrieveZoneError::Unauthorized,
-                    _ => RetrieveZoneError::Custom(()),
+                    _ => RetrieveZoneError::Custom(err),
                 };
             }
-            RetrieveZoneError::Custom(())
+            RetrieveZoneError::Custom(err)
         })?;
 
         Ok(HetznerZone {
@@ -64,11 +64,10 @@ impl Provider for HetznerProvider {
                         reqwest::StatusCode::UNAUTHORIZED | reqwest::StatusCode::FORBIDDEN => {
                             RetrieveZoneError::Unauthorized
                         }
-                        _ => RetrieveZoneError::Custom(()),
+                        _ => RetrieveZoneError::Custom(err),
                     };
                 }
-                println!("{:?}", err);
-                RetrieveZoneError::Custom(())
+                RetrieveZoneError::Custom(err)
             });
 
             match result {
@@ -90,7 +89,7 @@ impl Provider for HetznerProvider {
                     );
                 }
                 Err(err) => {
-                    if err == RetrieveZoneError::NotFound {
+                    if let RetrieveZoneError::NotFound = err {
                         break;
                     }
                     return Err(err);
@@ -109,7 +108,7 @@ impl Provider for HetznerProvider {
 }
 
 impl CreateZone for HetznerProvider {
-    type CustomCreateError = ();
+    type CustomCreateError = reqwest::Error;
 
     fn create_zone(
         &self,
@@ -120,10 +119,10 @@ impl CreateZone for HetznerProvider {
                 return match err.status().unwrap() {
                     reqwest::StatusCode::UNAUTHORIZED => CreateZoneError::Unauthorized,
                     reqwest::StatusCode::UNPROCESSABLE_ENTITY => CreateZoneError::InvalidDomainName,
-                    _ => CreateZoneError::Custom(()),
+                    _ => CreateZoneError::Custom(err),
                 };
             }
-            CreateZoneError::Custom(())
+            CreateZoneError::Custom(err)
         })?;
 
         Ok(HetznerZone {
@@ -134,7 +133,7 @@ impl CreateZone for HetznerProvider {
 }
 
 impl DeleteZone for HetznerProvider {
-    type CustomDeleteError = ();
+    type CustomDeleteError = reqwest::Error;
 
     fn delete_zone(&self, zone_id: &str) -> Result<(), DeleteZoneError<Self::CustomDeleteError>> {
         self.api_client.delete_zone(zone_id).map_err(|err| {
@@ -142,10 +141,10 @@ impl DeleteZone for HetznerProvider {
                 return match err.status().unwrap() {
                     reqwest::StatusCode::NOT_FOUND => DeleteZoneError::NotFound,
                     reqwest::StatusCode::UNAUTHORIZED => DeleteZoneError::Unauthorized,
-                    _ => DeleteZoneError::Custom(()),
+                    _ => DeleteZoneError::Custom(err),
                 };
             }
-            DeleteZoneError::Custom(())
+            DeleteZoneError::Custom(err)
         })
     }
 }
@@ -156,7 +155,7 @@ pub struct HetznerZone {
 }
 
 impl Zone for HetznerZone {
-    type CustomRetrieveError = ();
+    type CustomRetrieveError = reqwest::Error;
 
     fn id(&self) -> &str {
         &self.repr.id
@@ -182,10 +181,10 @@ impl Zone for HetznerZone {
                             reqwest::StatusCode::UNAUTHORIZED | reqwest::StatusCode::FORBIDDEN => {
                                 RetrieveRecordError::Unauthorized
                             }
-                            _ => RetrieveRecordError::Custom(()),
+                            _ => RetrieveRecordError::Custom(err),
                         };
                     }
-                    RetrieveRecordError::Custom(())
+                    RetrieveRecordError::Custom(err)
                 });
 
             match result {
@@ -204,7 +203,7 @@ impl Zone for HetznerZone {
                     );
                 }
                 Err(err) => {
-                    if err == RetrieveRecordError::NotFound {
+                    if let RetrieveRecordError::NotFound = err {
                         break;
                     }
                     return Err(err);
@@ -230,10 +229,10 @@ impl Zone for HetznerZone {
                 return match err.status().unwrap() {
                     reqwest::StatusCode::NOT_FOUND => RetrieveRecordError::NotFound,
                     reqwest::StatusCode::UNAUTHORIZED => RetrieveRecordError::Unauthorized,
-                    _ => RetrieveRecordError::Custom(()),
+                    _ => RetrieveRecordError::Custom(err),
                 };
             }
-            RetrieveRecordError::Custom(())
+            RetrieveRecordError::Custom(err)
         })?;
 
         if response.record.zone_id != self.repr.id {
@@ -245,7 +244,7 @@ impl Zone for HetznerZone {
 }
 
 impl CreateRecord for HetznerZone {
-    type CustomCreateError = ();
+    type CustomCreateError = reqwest::Error;
 
     fn create_record(
         &self,
@@ -279,10 +278,10 @@ impl CreateRecord for HetznerZone {
                         reqwest::StatusCode::UNPROCESSABLE_ENTITY => {
                             CreateRecordError::InvalidRecord
                         }
-                        _ => CreateRecordError::Custom(()),
+                        _ => CreateRecordError::Custom(err),
                     };
                 }
-                CreateRecordError::Custom(())
+                CreateRecordError::Custom(err)
             })?;
 
         Ok(response.record.into_generic(self.repr.ttl))
@@ -290,7 +289,7 @@ impl CreateRecord for HetznerZone {
 }
 
 impl DeleteRecord for HetznerZone {
-    type CustomDeleteError = ();
+    type CustomDeleteError = reqwest::Error;
 
     fn delete_record(
         &self,
@@ -299,7 +298,7 @@ impl DeleteRecord for HetznerZone {
         self.get_record(record_id).map_err(|err| match err {
             RetrieveRecordError::Unauthorized => DeleteRecordError::Unauthorized,
             RetrieveRecordError::NotFound => DeleteRecordError::NotFound,
-            RetrieveRecordError::Custom(_) => DeleteRecordError::Custom(()),
+            RetrieveRecordError::Custom(rerr) => DeleteRecordError::Custom(rerr),
         })?;
 
         self.api_client.delete_record(record_id).map_err(|err| {
@@ -307,10 +306,10 @@ impl DeleteRecord for HetznerZone {
                 return match err.status().unwrap() {
                     reqwest::StatusCode::NOT_FOUND => DeleteRecordError::NotFound,
                     reqwest::StatusCode::UNAUTHORIZED => DeleteRecordError::Unauthorized,
-                    _ => DeleteRecordError::Custom(()),
+                    _ => DeleteRecordError::Custom(err),
                 };
             }
-            DeleteRecordError::Custom(())
+            DeleteRecordError::Custom(err)
         })
     }
 }
