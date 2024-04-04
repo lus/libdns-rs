@@ -1,0 +1,43 @@
+name: Build and check
+
+on:
+  push:
+    branches-ignore:
+      - 'skip-ci/**'
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  build_and_check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [stable, nightly, beta]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: clippy, rustfmt
+      - name: Build project
+        run: cargo build --all-features
+      - name: Run tests
+        run: cargo test --all-features
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Run Clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
+          name: Clippy results (${{ matrix.toolchain }})
