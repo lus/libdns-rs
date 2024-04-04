@@ -8,7 +8,7 @@ use crate::{
 
 mod api;
 
-const SUPPORTED_RECORD_TYPES: &'static [&'static str; 14] = &[
+const SUPPORTED_RECORD_TYPES: &[&str; 14] = &[
     "A", "AAAA", "NS", "MX", "CNAME", "RP", "TXT", "SOA", "HINFO", "SRV", "DANE", "TLSA", "DS",
     "CAA",
 ];
@@ -90,7 +90,7 @@ impl Provider for HetznerProvider {
 
             match result {
                 Ok(response) => {
-                    if total == None {
+                    if total.is_none() {
                         total = Some(response.meta.pagination.total_entries as usize);
                     }
 
@@ -214,7 +214,7 @@ impl Zone for HetznerZone {
 
             match result {
                 Ok(response) => {
-                    if total == None {
+                    if total.is_none() {
                         total = Some(response.meta.pagination.total_entries as usize);
                     }
 

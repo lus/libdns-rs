@@ -165,46 +165,42 @@ impl RecordData {
     /// This function falls back to [`RecordData::Other`] if the value could not be parsed or the type is not supported.
     pub fn from_raw(typ: &str, value: &str) -> RecordData {
         let data = match typ {
-            "A" => Ipv4Addr::from_str(value)
-                .ok()
-                .map(|addr| RecordData::A(addr)),
-            "AAAA" => Ipv6Addr::from_str(value)
-                .ok()
-                .map(|addr| RecordData::AAAA(addr)),
+            "A" => Ipv4Addr::from_str(value).ok().map(RecordData::A),
+            "AAAA" => Ipv6Addr::from_str(value).ok().map(RecordData::AAAA),
             "CNAME" => Some(RecordData::CNAME(value.to_owned())),
             "MX" => {
                 let mut iter = value.split_whitespace();
 
-                let priority = iter.next().and_then(|raw| raw.parse::<u16>().ok());
-                let server = iter.next();
+                let opt_priority = iter.next().and_then(|raw| raw.parse::<u16>().ok());
+                let opt_server = iter.next();
 
-                if priority.is_none() || server.is_none() {
-                    None
-                } else {
-                    Some(RecordData::MX {
-                        priority: priority.unwrap(),
-                        mail_server: server.unwrap().to_owned(),
-                    })
+                match (opt_priority, opt_server) {
+                    (Some(priority), Some(server)) => Some(RecordData::MX {
+                        priority,
+                        mail_server: server.to_owned(),
+                    }),
+                    _ => None,
                 }
             }
             "NS" => Some(RecordData::NS(value.to_owned())),
             "SRV" => {
                 let mut iter = value.split_whitespace();
 
-                let priority = iter.next().and_then(|raw| raw.parse::<u16>().ok());
-                let weight = iter.next().and_then(|raw| raw.parse::<u16>().ok());
-                let port = iter.next().and_then(|raw| raw.parse::<u16>().ok());
-                let target = iter.next();
+                let opt_priority = iter.next().and_then(|raw| raw.parse::<u16>().ok());
+                let opt_weight = iter.next().and_then(|raw| raw.parse::<u16>().ok());
+                let opt_port = iter.next().and_then(|raw| raw.parse::<u16>().ok());
+                let opt_target = iter.next();
 
-                if priority.is_none() || weight.is_none() || port.is_none() || target.is_none() {
-                    None
-                } else {
-                    Some(RecordData::SRV {
-                        priority: priority.unwrap(),
-                        weight: weight.unwrap(),
-                        port: port.unwrap(),
-                        target: target.unwrap().to_owned(),
-                    })
+                match (opt_priority, opt_weight, opt_port, opt_target) {
+                    (Some(priority), Some(weight), Some(port), Some(target)) => {
+                        Some(RecordData::SRV {
+                            priority,
+                            weight,
+                            port,
+                            target: target.to_owned(),
+                        })
+                    }
+                    _ => None,
                 }
             }
             "TXT" => Some(RecordData::TXT(value.to_owned())),
