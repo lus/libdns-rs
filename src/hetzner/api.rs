@@ -8,6 +8,7 @@ use serde::Deserialize;
 
 const HETZNER_API_URL: &str = "https://dns.hetzner.com/api/v1";
 
+#[derive(Debug, Clone)]
 pub struct Client {
     http_client: HttpClient,
 }
@@ -118,7 +119,7 @@ impl Client {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash, Deserialize)]
 pub struct Zone {
     pub id: String,
     pub name: String,
@@ -126,7 +127,7 @@ pub struct Zone {
     pub ttl: u64,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ZoneStatus {
     Verified,
@@ -134,18 +135,18 @@ pub enum ZoneStatus {
     Pending,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash, Deserialize)]
 pub struct ZoneResponse {
     pub zone: Zone,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash, Deserialize)]
 pub struct ZonesResponse {
     pub meta: Meta,
     pub zones: Vec<Zone>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash, Deserialize)]
 pub struct Record {
     pub id: String,
     pub name: String,
@@ -156,23 +157,23 @@ pub struct Record {
     pub zone_id: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash, Deserialize)]
 pub struct RecordResponse {
     pub record: Record,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash, Deserialize)]
 pub struct RecordsResponse {
     pub meta: Meta,
     pub records: Vec<Record>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash, Deserialize)]
 pub struct Meta {
     pub pagination: Pagination,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash, Deserialize)]
 pub struct Pagination {
     pub last_page: u32,
     pub page: u32,

@@ -13,8 +13,17 @@ const SUPPORTED_RECORD_TYPES: &'static [&'static str; 14] = &[
     "CAA",
 ];
 
+#[derive(Debug)]
 pub struct HetznerProvider {
     api_client: Rc<api::Client>,
+}
+
+impl Clone for HetznerProvider {
+    fn clone(&self) -> Self {
+        return HetznerProvider {
+            api_client: Rc::from(self.api_client.as_ref().clone()),
+        };
+    }
 }
 
 impl HetznerProvider {
@@ -149,6 +158,7 @@ impl DeleteZone for HetznerProvider {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct HetznerZone {
     api_client: Rc<api::Client>,
     repr: api::Zone,
