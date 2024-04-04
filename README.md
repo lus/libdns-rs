@@ -1,5 +1,9 @@
 # libdns-rs
 
+[![crates.io](https://img.shields.io/crates/v/libdns.svg)](https://crates.io/crates/libdns)
+[![Docs](https://docs.rs/libdns/badge.svg)](https://docs.rs/libdns)
+![Build and check](https://github.com/lus/libdns-rs/actions/workflows/build_and_check.yml/badge.svg)
+
 This project is a rip-off of [libdns](https://github.com/libdns/libdns) written in Rust.
 It defines an abstract API for managing DNS zones and implements it for several widely-used providers.
 
