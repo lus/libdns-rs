@@ -23,6 +23,7 @@
 
 use std::{
     fmt::Debug,
+    future::Future,
     net::{Ipv4Addr, Ipv6Addr},
     str::FromStr,
 };
@@ -47,14 +48,16 @@ pub trait Provider {
 
     /// Retrieves all available zones.  
     /// When no record exists, an [`Ok`] value with an empty [`Vec`] will be returned, not [`RetrieveZoneError::NotFound`].
-    fn list_zones(&self) -> Result<Vec<Self::Zone>, RetrieveZoneError<Self::CustomRetrieveError>>;
+    fn list_zones(
+        &self,
+    ) -> impl Future<Output = Result<Vec<Self::Zone>, RetrieveZoneError<Self::CustomRetrieveError>>>;
 
     /// Retrieves a zone by its provider-specific ID.  
     /// Refer to the provider's documentation to figure out which value is used as the ID.
     fn get_zone(
         &self,
         zone_id: &str,
-    ) -> Result<Self::Zone, RetrieveZoneError<Self::CustomRetrieveError>>;
+    ) -> impl Future<Output = Result<Self::Zone, RetrieveZoneError<Self::CustomRetrieveError>>>;
 }
 
 /// Represents an error that occured when retrieving DNS zones using [`Provider::list_zones`] or [`Provider::get_zone`].
@@ -83,7 +86,7 @@ pub trait CreateZone: Provider {
     fn create_zone(
         &self,
         domain: &str,
-    ) -> Result<Self::Zone, CreateZoneError<Self::CustomCreateError>>;
+    ) -> impl Future<Output = Result<Self::Zone, CreateZoneError<Self::CustomCreateError>>>;
 }
 
 /// Represents an error that occured when creating DNS zones using [`CreateZone::create_zone`].
@@ -110,7 +113,10 @@ pub trait DeleteZone: Provider {
 
     /// Deletes a zone by its provider-specific ID.  
     /// Refer to the provider's documentation to figure out which value is used as the ID.
-    fn delete_zone(&self, zone_id: &str) -> Result<(), DeleteZoneError<Self::CustomDeleteError>>;
+    fn delete_zone(
+        &self,
+        zone_id: &str,
+    ) -> impl Future<Output = Result<(), DeleteZoneError<Self::CustomDeleteError>>>;
 }
 
 /// Represents an error that occured when deleting DNS zones using [`DeleteZone::delete_zone`].
@@ -275,14 +281,16 @@ pub trait Zone {
 
     /// Retrieves all available records.  
     /// When no record exists, an [`Ok`] value with an empty [`Vec`] will be returned, not [`RetrieveRecordError::NotFound`].
-    fn list_records(&self) -> Result<Vec<Record>, RetrieveRecordError<Self::CustomRetrieveError>>;
+    fn list_records(
+        &self,
+    ) -> impl Future<Output = Result<Vec<Record>, RetrieveRecordError<Self::CustomRetrieveError>>>;
 
     /// Retrieves a record by its provider-specific ID.  
     /// Refer to the provider's documentation to figure out which value is used as the ID.
     fn get_record(
         &self,
         record_id: &str,
-    ) -> Result<Record, RetrieveRecordError<Self::CustomRetrieveError>>;
+    ) -> impl Future<Output = Result<Record, RetrieveRecordError<Self::CustomRetrieveError>>>;
 }
 
 /// Represents an error that occured when retrieving DNS records using [`Zone::list_records`] or [`Zone::get_record`].
@@ -313,7 +321,7 @@ pub trait CreateRecord: Zone {
         host: &str,
         data: &RecordData,
         ttl: u64,
-    ) -> Result<Record, CreateRecordError<Self::CustomCreateError>>;
+    ) -> impl Future<Output = Result<Record, CreateRecordError<Self::CustomCreateError>>>;
 }
 
 /// Represents an error that occured when creating DNS records using [`CreateRecord::create_record`].
@@ -345,7 +353,7 @@ pub trait DeleteRecord: Zone {
     fn delete_record(
         &self,
         record_id: &str,
-    ) -> Result<(), DeleteRecordError<Self::CustomDeleteError>>;
+    ) -> impl Future<Output = Result<(), DeleteRecordError<Self::CustomDeleteError>>>;
 }
 
 /// Represents an error that occured when deleting DNS records using [`DeleteRecord::delete_record`].

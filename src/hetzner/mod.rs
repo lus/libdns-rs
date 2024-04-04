@@ -39,20 +39,24 @@ impl Provider for HetznerProvider {
     type Zone = HetznerZone;
     type CustomRetrieveError = reqwest::Error;
 
-    fn get_zone(
+    async fn get_zone(
         &self,
         zone_id: &str,
     ) -> Result<Self::Zone, RetrieveZoneError<Self::CustomRetrieveError>> {
-        let response = self.api_client.retrieve_zone(zone_id).map_err(|err| {
-            if err.is_status() {
-                return match err.status().unwrap() {
-                    reqwest::StatusCode::NOT_FOUND => RetrieveZoneError::NotFound,
-                    reqwest::StatusCode::UNAUTHORIZED => RetrieveZoneError::Unauthorized,
-                    _ => RetrieveZoneError::Custom(err),
-                };
-            }
-            RetrieveZoneError::Custom(err)
-        })?;
+        let response = self
+            .api_client
+            .retrieve_zone(zone_id)
+            .await
+            .map_err(|err| {
+                if err.is_status() {
+                    return match err.status().unwrap() {
+                        reqwest::StatusCode::NOT_FOUND => RetrieveZoneError::NotFound,
+                        reqwest::StatusCode::UNAUTHORIZED => RetrieveZoneError::Unauthorized,
+                        _ => RetrieveZoneError::Custom(err),
+                    };
+                }
+                RetrieveZoneError::Custom(err)
+            })?;
 
         Ok(HetznerZone {
             api_client: self.api_client.clone(),
@@ -60,24 +64,29 @@ impl Provider for HetznerProvider {
         })
     }
 
-    fn list_zones(&self) -> Result<Vec<Self::Zone>, RetrieveZoneError<Self::CustomRetrieveError>> {
+    async fn list_zones(
+        &self,
+    ) -> Result<Vec<Self::Zone>, RetrieveZoneError<Self::CustomRetrieveError>> {
         let mut zones = Vec::new();
         let mut total: Option<usize> = None;
         let mut page = 1;
 
         loop {
-            let result = self.api_client.retrieve_zones(page, 100).map_err(|err| {
-                if err.is_status() {
-                    return match err.status().unwrap() {
-                        reqwest::StatusCode::NOT_FOUND => RetrieveZoneError::NotFound,
-                        reqwest::StatusCode::UNAUTHORIZED | reqwest::StatusCode::FORBIDDEN => {
-                            RetrieveZoneError::Unauthorized
+            let result =
+                self.api_client
+                    .retrieve_zones(page, 100)
+                    .await
+                    .map_err(|err| {
+                        if err.is_status() {
+                            return match err.status().unwrap() {
+                                reqwest::StatusCode::NOT_FOUND => RetrieveZoneError::NotFound,
+                                reqwest::StatusCode::UNAUTHORIZED
+                                | reqwest::StatusCode::FORBIDDEN => RetrieveZoneError::Unauthorized,
+                                _ => RetrieveZoneError::Custom(err),
+                            };
                         }
-                        _ => RetrieveZoneError::Custom(err),
-                    };
-                }
-                RetrieveZoneError::Custom(err)
-            });
+                        RetrieveZoneError::Custom(err)
+                    });
 
             match result {
                 Ok(response) => {
@@ -119,11 +128,11 @@ impl Provider for HetznerProvider {
 impl CreateZone for HetznerProvider {
     type CustomCreateError = reqwest::Error;
 
-    fn create_zone(
+    async fn create_zone(
         &self,
         domain: &str,
     ) -> Result<Self::Zone, CreateZoneError<Self::CustomCreateError>> {
-        let response = self.api_client.create_zone(domain).map_err(|err| {
+        let response = self.api_client.create_zone(domain).await.map_err(|err| {
             if err.is_status() {
                 return match err.status().unwrap() {
                     reqwest::StatusCode::UNAUTHORIZED => CreateZoneError::Unauthorized,
@@ -144,8 +153,11 @@ impl CreateZone for HetznerProvider {
 impl DeleteZone for HetznerProvider {
     type CustomDeleteError = reqwest::Error;
 
-    fn delete_zone(&self, zone_id: &str) -> Result<(), DeleteZoneError<Self::CustomDeleteError>> {
-        self.api_client.delete_zone(zone_id).map_err(|err| {
+    async fn delete_zone(
+        &self,
+        zone_id: &str,
+    ) -> Result<(), DeleteZoneError<Self::CustomDeleteError>> {
+        self.api_client.delete_zone(zone_id).await.map_err(|err| {
             if err.is_status() {
                 return match err.status().unwrap() {
                     reqwest::StatusCode::NOT_FOUND => DeleteZoneError::NotFound,
@@ -175,7 +187,9 @@ impl Zone for HetznerZone {
         &self.repr.name
     }
 
-    fn list_records(&self) -> Result<Vec<Record>, RetrieveRecordError<Self::CustomRetrieveError>> {
+    async fn list_records(
+        &self,
+    ) -> Result<Vec<Record>, RetrieveRecordError<Self::CustomRetrieveError>> {
         let mut records = Vec::new();
         let mut total: Option<usize> = None;
         let mut page = 1;
@@ -184,6 +198,7 @@ impl Zone for HetznerZone {
             let result = self
                 .api_client
                 .retrieve_records(&self.repr.id, page, 100)
+                .await
                 .map_err(|err| {
                     if err.is_status() {
                         return match err.status().unwrap() {
@@ -230,20 +245,24 @@ impl Zone for HetznerZone {
         Ok(records)
     }
 
-    fn get_record(
+    async fn get_record(
         &self,
         record_id: &str,
     ) -> Result<Record, RetrieveRecordError<Self::CustomRetrieveError>> {
-        let response = self.api_client.retrieve_record(record_id).map_err(|err| {
-            if err.is_status() {
-                return match err.status().unwrap() {
-                    reqwest::StatusCode::NOT_FOUND => RetrieveRecordError::NotFound,
-                    reqwest::StatusCode::UNAUTHORIZED => RetrieveRecordError::Unauthorized,
-                    _ => RetrieveRecordError::Custom(err),
-                };
-            }
-            RetrieveRecordError::Custom(err)
-        })?;
+        let response = self
+            .api_client
+            .retrieve_record(record_id)
+            .await
+            .map_err(|err| {
+                if err.is_status() {
+                    return match err.status().unwrap() {
+                        reqwest::StatusCode::NOT_FOUND => RetrieveRecordError::NotFound,
+                        reqwest::StatusCode::UNAUTHORIZED => RetrieveRecordError::Unauthorized,
+                        _ => RetrieveRecordError::Custom(err),
+                    };
+                }
+                RetrieveRecordError::Custom(err)
+            })?;
 
         if response.record.zone_id != self.repr.id {
             return Err(RetrieveRecordError::NotFound);
@@ -256,7 +275,7 @@ impl Zone for HetznerZone {
 impl CreateRecord for HetznerZone {
     type CustomCreateError = reqwest::Error;
 
-    fn create_record(
+    async fn create_record(
         &self,
         host: &str,
         data: &RecordData,
@@ -281,6 +300,7 @@ impl CreateRecord for HetznerZone {
                 data.get_value().as_str(),
                 opt_ttl,
             )
+            .await
             .map_err(|err| {
                 if err.is_status() {
                     return match err.status().unwrap() {
@@ -301,26 +321,29 @@ impl CreateRecord for HetznerZone {
 impl DeleteRecord for HetznerZone {
     type CustomDeleteError = reqwest::Error;
 
-    fn delete_record(
+    async fn delete_record(
         &self,
         record_id: &str,
     ) -> Result<(), DeleteRecordError<Self::CustomDeleteError>> {
-        self.get_record(record_id).map_err(|err| match err {
+        self.get_record(record_id).await.map_err(|err| match err {
             RetrieveRecordError::Unauthorized => DeleteRecordError::Unauthorized,
             RetrieveRecordError::NotFound => DeleteRecordError::NotFound,
             RetrieveRecordError::Custom(rerr) => DeleteRecordError::Custom(rerr),
         })?;
 
-        self.api_client.delete_record(record_id).map_err(|err| {
-            if err.is_status() {
-                return match err.status().unwrap() {
-                    reqwest::StatusCode::NOT_FOUND => DeleteRecordError::NotFound,
-                    reqwest::StatusCode::UNAUTHORIZED => DeleteRecordError::Unauthorized,
-                    _ => DeleteRecordError::Custom(err),
-                };
-            }
-            DeleteRecordError::Custom(err)
-        })
+        self.api_client
+            .delete_record(record_id)
+            .await
+            .map_err(|err| {
+                if err.is_status() {
+                    return match err.status().unwrap() {
+                        reqwest::StatusCode::NOT_FOUND => DeleteRecordError::NotFound,
+                        reqwest::StatusCode::UNAUTHORIZED => DeleteRecordError::Unauthorized,
+                        _ => DeleteRecordError::Custom(err),
+                    };
+                }
+                DeleteRecordError::Custom(err)
+            })
     }
 }
 

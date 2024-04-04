@@ -9,5 +9,5 @@ serde = { version = "1.0.197", optional = true, features = ["derive"] }
 
 [features]
 default = ["reqwest?/default-tls"]
-hetzner = ["reqwest/blocking", "reqwest/json", "dep:serde"]
+hetzner = ["reqwest/json", "dep:serde"]
 rustls = ["reqwest?/rustls"]

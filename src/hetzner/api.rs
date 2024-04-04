@@ -1,8 +1,8 @@
 use std::{borrow::Cow, collections::HashMap, error::Error};
 
 use reqwest::{
-    blocking::Client as HttpClient,
     header::{HeaderMap, HeaderValue},
+    Client as HttpClient,
 };
 use serde::Deserialize;
 
@@ -24,7 +24,7 @@ impl Client {
         Ok(Self { http_client })
     }
 
-    pub fn retrieve_zones(
+    pub async fn retrieve_zones(
         &self,
         page: u32,
         per_page: u32,
@@ -34,36 +34,43 @@ impl Client {
                 "{}/zones?page={}&per_page={}",
                 HETZNER_API_URL, page, per_page
             ))
-            .send()?
-            .json()
+            .send()
+            .await?
+            .json::<ZonesResponse>()
+            .await
     }
 
-    pub fn retrieve_zone(&self, zone_id: &str) -> Result<ZoneResponse, reqwest::Error> {
+    pub async fn retrieve_zone(&self, zone_id: &str) -> Result<ZoneResponse, reqwest::Error> {
         self.http_client
             .get(format!("{}/zones/{}", HETZNER_API_URL, zone_id))
-            .send()?
+            .send()
+            .await?
             .json()
+            .await
     }
 
-    pub fn create_zone(&self, domain: &str) -> Result<ZoneResponse, reqwest::Error> {
+    pub async fn create_zone(&self, domain: &str) -> Result<ZoneResponse, reqwest::Error> {
         let mut request_body = HashMap::new();
         request_body.insert("name", domain);
 
         self.http_client
             .post(format!("{}/zones", HETZNER_API_URL))
             .json(&request_body)
-            .send()?
+            .send()
+            .await?
             .json()
+            .await
     }
 
-    pub fn delete_zone(&self, zone_id: &str) -> Result<(), reqwest::Error> {
+    pub async fn delete_zone(&self, zone_id: &str) -> Result<(), reqwest::Error> {
         self.http_client
             .delete(format!("{}/zones/{}", HETZNER_API_URL, zone_id))
             .send()
+            .await
             .map(|_| ())
     }
 
-    pub fn retrieve_records(
+    pub async fn retrieve_records(
         &self,
         zone_id: &str,
         page: u32,
@@ -74,18 +81,22 @@ impl Client {
                 "{}/records?zone_id={}&page={}&per_page={}",
                 HETZNER_API_URL, zone_id, page, per_page
             ))
-            .send()?
+            .send()
+            .await?
             .json()
+            .await
     }
 
-    pub fn retrieve_record(&self, record_id: &str) -> Result<RecordResponse, reqwest::Error> {
+    pub async fn retrieve_record(&self, record_id: &str) -> Result<RecordResponse, reqwest::Error> {
         self.http_client
             .get(format!("{}/records/{}", HETZNER_API_URL, record_id))
-            .send()?
+            .send()
+            .await?
             .json()
+            .await
     }
 
-    pub fn create_record(
+    pub async fn create_record(
         &self,
         zone_id: &str,
         host: &str,
@@ -107,14 +118,17 @@ impl Client {
         self.http_client
             .post(format!("{}/records", HETZNER_API_URL))
             .json(&request_body)
-            .send()?
+            .send()
+            .await?
             .json()
+            .await
     }
 
-    pub fn delete_record(&self, record_id: &str) -> Result<(), reqwest::Error> {
+    pub async fn delete_record(&self, record_id: &str) -> Result<(), reqwest::Error> {
         self.http_client
             .delete(format!("{}/records/{}", HETZNER_API_URL, record_id))
             .send()
+            .await
             .map(|_| ())
     }
 }
