@@ -17,7 +17,7 @@ serde = { version = "1.0.197", optional = true, features = ["derive"] }
 [features]
 default = ["default-tls"]
 
-hetzner = ["dep:serde", "dep:reqwest"]
+hetzner = ["serde", "dep:reqwest"]
 
 default-tls = ["reqwest?/default-tls"]
 rustls-tls = ["reqwest?/rustls-tls"]
