@@ -28,6 +28,8 @@ use std::{
     str::FromStr,
 };
 
+use thiserror::Error;
+
 #[cfg(feature = "hetzner")]
 pub mod hetzner;
 
@@ -64,16 +66,19 @@ pub trait Provider {
 ///
 /// Providers can provide a custom error type ([`Provider::CustomRetrieveError`]) and return it using [`RetrieveZoneError::Custom`] to extend the pool of well-defined errors.  
 /// Refer to the provider's documentation for more information.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, Error)]
 pub enum RetrieveZoneError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
+    #[error("the DNS provider is unauthorized")]
     Unauthorized,
 
     /// Indicates that there is no zone with the given ID.
+    #[error("the requested zone was not found")]
     NotFound,
 
     /// Provides a custom, provider-specific error of type `T`.
-    Custom(T),
+    #[error(transparent)]
+    Custom(#[from] T),
 }
 
 /// Represents a [`Provider`] that supports zone creation.
@@ -93,16 +98,19 @@ pub trait CreateZone: Provider {
 ///
 /// Providers can provide a custom error type ([`CreateZone::CustomCreateError`]) and return it using [`CreateZoneError::Custom`] to extend the pool of well-defined errors.  
 /// Refer to the provider's documentation for more information.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, Error)]
 pub enum CreateZoneError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
+    #[error("the DNS provider is unauthorized")]
     Unauthorized,
 
     /// Indicates that the specified domain name was not accepted.
+    #[error("the given domain name is invalid")]
     InvalidDomainName,
 
     /// Provides a custom, provider-specific error of type `T`.
-    Custom(T),
+    #[error(transparent)]
+    Custom(#[from] T),
 }
 
 /// Represents a [`Provider`] that supports zone deletion.
@@ -123,16 +131,19 @@ pub trait DeleteZone: Provider {
 ///
 /// Providers can provide a custom error type ([`DeleteZone::CustomDeleteError`]) and return it using [`DeleteZoneError::Custom`] to extend the pool of well-defined errors.  
 /// Refer to the provider's documentation for more information.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, Error)]
 pub enum DeleteZoneError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
+    #[error("the DNS provider is unauthorized")]
     Unauthorized,
 
     /// Indicates that there is no zone with the given ID.
+    #[error("the requested zone was not found")]
     NotFound,
 
     /// Provides a custom, provider-specific error of type `T`.
-    Custom(T),
+    #[error(transparent)]
+    Custom(#[from] T),
 }
 
 /// Represents a DNS record value.
@@ -293,16 +304,19 @@ pub trait Zone {
 ///
 /// Providers can provide a custom error type ([`Zone::CustomRetrieveError`]) and return it using [`RetrieveRecordError::Custom`] to extend the pool of well-defined errors.  
 /// Refer to the provider's documentation for more information.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, Error)]
 pub enum RetrieveRecordError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
+    #[error("the DNS provider is unauthorized")]
     Unauthorized,
 
     /// Indicates that there is no record with the given ID.
+    #[error("the requested record was not found")]
     NotFound,
 
     /// Provides a custom, provider-specific error of type `T`.
-    Custom(T),
+    #[error(transparent)]
+    Custom(#[from] T),
 }
 
 /// Represents a [`Zone`] that supports record creation.
@@ -324,19 +338,23 @@ pub trait CreateRecord: Zone {
 ///
 /// Providers can provide a custom error type ([`CreateRecord::CustomCreateError`]) and return it using [`CreateRecordError::Custom`] to extend the pool of well-defined errors.  
 /// Refer to the provider's documentation for more information.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, Error)]
 pub enum CreateRecordError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
+    #[error("the DNS provider is unauthorized")]
     Unauthorized,
 
     /// Indicates that the DNS provider does not support the specified record type.
+    #[error("the DNS provider does not support the specified record type")]
     UnsupportedType,
 
     /// Indicates that the record value is invalid.
+    #[error("the given record value is invalid")]
     InvalidRecord,
 
     /// Provides a custom, provider-specific error of type `T`.
-    Custom(T),
+    #[error(transparent)]
+    Custom(#[from] T),
 }
 
 /// Represents a [`Zone`] that supports record deletion.
@@ -356,14 +374,17 @@ pub trait DeleteRecord: Zone {
 ///
 /// Providers can provide a custom error type ([`DeleteRecord::CustomDeleteError`]) and return it using [`DeleteRecordError::Custom`] to extend the pool of well-defined errors.  
 /// Refer to the provider's documentation for more information.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, Error)]
 pub enum DeleteRecordError<T> {
     /// Indicates that the DNS provider is not authorized to execute this action.
+    #[error("the DNS provider is unauthorized")]
     Unauthorized,
 
     /// Indicates that there is no record with the given ID.
+    #[error("the requested record was not found")]
     NotFound,
 
     /// Provides a custom, provider-specific error of type `T`.
-    Custom(T),
+    #[error(transparent)]
+    Custom(#[from] T),
 }
