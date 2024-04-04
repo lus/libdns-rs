@@ -1,7 +1,13 @@
 [package]
 name = "libdns"
 version = "0.1.0"
+authors = ["Lukas Schulte Pelkum <lockas.sp@proton.me>"]
 edition = "2021"
+description = "Abstracting and implementing DNS zone management for different providers"
+repository = "https://github.com/lus/libdns-rs"
+license = "0BSD"
+keywords = ["dns", "zone", "abstract"]
+categories = ["api-bindings"]
 
 [dependencies]
 thiserror = "1.0"
