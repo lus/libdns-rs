@@ -1,4 +1,4 @@
-use std::{error::Error as StdErr, rc::Rc};
+use std::{error::Error as StdErr, sync::Arc};
 
 use crate::{
     CreateRecord, CreateRecordError, CreateZone, CreateZoneError, DeleteRecord, DeleteRecordError,
@@ -15,13 +15,13 @@ const SUPPORTED_RECORD_TYPES: &[&str; 14] = &[
 
 #[derive(Debug)]
 pub struct HetznerProvider {
-    api_client: Rc<api::Client>,
+    api_client: Arc<api::Client>,
 }
 
 impl Clone for HetznerProvider {
     fn clone(&self) -> Self {
         return HetznerProvider {
-            api_client: Rc::from(self.api_client.as_ref().clone()),
+            api_client: Arc::from(self.api_client.as_ref().clone()),
         };
     }
 }
@@ -30,7 +30,7 @@ impl HetznerProvider {
     pub fn new(api_key: &str) -> Result<Self, Box<dyn StdErr>> {
         let api_client = api::Client::new(api_key)?;
         Ok(Self {
-            api_client: Rc::new(api_client),
+            api_client: Arc::new(api_client),
         })
     }
 }
@@ -172,7 +172,7 @@ impl DeleteZone for HetznerProvider {
 
 #[derive(Debug, Clone)]
 pub struct HetznerZone {
-    api_client: Rc<api::Client>,
+    api_client: Arc<api::Client>,
     repr: api::Zone,
 }
 
