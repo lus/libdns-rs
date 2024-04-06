@@ -1,6 +1,6 @@
 [package]
 name = "libdns"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Lukas Schulte Pelkum <lockas.sp@proton.me>"]
 edition = "2021"
 description = "Abstracting and implementing DNS zone management for different providers"
